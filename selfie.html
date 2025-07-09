@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -449,45 +450,44 @@
     }
 
     function downloadStrip() {
-      const canvas = document.createElement('canvas');
-      const width = 320;
-      const height = 240 * 4 + 80;
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
+  const canvas  = document.createElement('canvas');
+  const width   = 320;               // whole strip width
+  const height  = 240 * 4 + 80;      // 4 pics + caption space
+  canvas.width  = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
 
-      ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, width, height);
+  // white background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
 
-      let imagesLoaded = 0;
-    imgs.forEach((img, i) => {
-    const image = new Image();
-    image.src = img.src;
-    image.onload = () => {
-    ctx.save();
-    ctx.translate(310, 0); // 10 + 300 width
-    ctx.scale(-1, 1); // Flip back horizontally
-    ctx.filter = currentFilter;
-    ctx.drawImage(image, 0, 10 + i * 240, 300, 220);
-    ctx.restore();
+  let loaded = 0;
+  imgs.forEach((img, i) => {
+    const pic = new Image();
+    pic.src   = img.src;             // already mirrored during capture
+    pic.onload = () => {
+      ctx.save();
+      ctx.filter = currentFilter;    // keep whatever filter was chosen
+      ctx.drawImage(pic, 10, 10 + i * 240, 300, 220); // ↔ 10‑px left padding
+      ctx.restore();
 
-    imagesLoaded++;
-    if (imagesLoaded === imgs.length) {
-      ctx.filter = 'none';
-      ctx.fillStyle = "#333";
-      ctx.font = "bold 16px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText("Shot n Go!", width / 2, height - 20);
+      if (++loaded === imgs.length) {
+        // caption
+        ctx.filter      = 'none';
+        ctx.fillStyle   = '#333';
+        ctx.font        = 'bold 16px Arial';
+        ctx.textAlign   = 'center';
+        ctx.fillText('Shot n Go!', width / 2, height - 20);
 
-      const link = document.createElement('a');
-      link.download = 'shot-n-go-strip.png';
-      link.href = canvas.toDataURL();
-      link.click();
-    }
-  };
-});
-
-    }
+        // trigger download
+        const link  = document.createElement('a');
+        link.download = 'shot-n-go-strip.png';
+        link.href     = canvas.toDataURL('image/png');
+        link.click();
+      }
+    };
+  });
+}
   </script>
 </body>
 </html>
