@@ -408,13 +408,18 @@
       const ctx = canvas.getContext('2d');
 
       const takePhoto = () => {
-        showFlash();
-        ctx.filter = currentFilter;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        imgs[count].src = canvas.toDataURL();
-        imgs[count].style.filter = currentFilter;
-        count++;
-      };
+  showFlash();
+  ctx.save();
+  ctx.scale(-1, 1); // Flip horizontally
+  ctx.translate(-canvas.width, 0); // Move canvas origin
+  ctx.filter = currentFilter;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  imgs[count].src = canvas.toDataURL();
+  imgs[count].style.filter = currentFilter;
+  count++;
+};
 
       for (let i = 0; i < 4; i++) {
         await countdown(3);
@@ -454,13 +459,20 @@
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, width, height);
 
-      imgs.forEach((img, i) => {
-        const image = new Image();
-        image.src = img.src;
-        ctx.filter = currentFilter;
-        ctx.drawImage(image, 10, 10 + i * 240, 300, 220);
-      });
+      let imagesLoaded = 0;
+    imgs.forEach((img, i) => {
+    const image = new Image();
+    image.src = img.src;
+    image.onload = () => {
+    ctx.save();
+    ctx.translate(310, 0); // 10 + 300 width
+    ctx.scale(-1, 1); // Flip back horizontally
+    ctx.filter = currentFilter;
+    ctx.drawImage(image, 0, 10 + i * 240, 300, 220);
+    ctx.restore();
 
+    imagesLoaded++;
+    if (imagesLoaded === imgs.length) {
       ctx.filter = 'none';
       ctx.fillStyle = "#333";
       ctx.font = "bold 16px Arial";
@@ -471,6 +483,10 @@
       link.download = 'shot-n-go-strip.png';
       link.href = canvas.toDataURL();
       link.click();
+    }
+  };
+});
+
     }
   </script>
 </body>
