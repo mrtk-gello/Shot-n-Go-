@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selfie</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="CSS/selfie.css">
+    <style></style>
+</head>
+<body>
+  <div id="camera-wrapper">
+    <video id="camera" autoplay></video>
+    <div class="countdown" id="countdown"></div>
+  </div>
+
+  <div class="description">Get ready! You'll take 4 shots — smile for each one!</div>
+
+  <div class="buttons">
+    <button class="filter-btn" onclick="openPopup()">Filters</button>
+    <button class="capture-btn" onclick="startCapture()">Capture</button>
+  </div>
+
+  <div id="overlay" onclick="closePopup()"></div>
+  <div class="popup" id="filterPopup">
+    <div class="filter-grid">
+      <div class="filter-thumb" style="filter: none; background-image: url('sample.jpg');" onclick="setFilter('none')">Normal</div>
+      <div class="filter-thumb" style="filter: grayscale(1); background-image: url('sample.jpg');" onclick="setFilter('grayscale(1)')">Grayscale</div>
+      <div class="filter-thumb" style="filter: hue-rotate(180deg); background-image: url('sample.jpg');" onclick="setFilter('hue-rotate(180deg)')">Hue</div>
+      <div class="filter-thumb" style="filter: sepia(1); background-image: url('sample.jpg');" onclick="setFilter('sepia(1)')">Sepia</div>
+      <div class="filter-thumb" style="filter: invert(1); background-image: url('sample.jpg');" onclick="setFilter('invert(1)')">Invert</div>
+      <div class="filter-thumb" style="filter: blur(2px); background-image: url('sample.jpg');" onclick="setFilter('blur(2px)')">Blur</div>
+      <div class="filter-thumb" style="filter: contrast(1.4); background-image: url('sample.jpg');" onclick="setFilter('contrast(1.4)')">Contrast</div>
+      <div class="filter-thumb" style="filter: brightness(1.2); background-image: url('sample.jpg');" onclick="setFilter('brightness(1.2)')">Bright</div>
+      <div class="filter-thumb" style="filter: brightness(1.2) contrast(1.4) saturate(1.6); background-image: url('sample.jpg');" onclick="setFilter('brightness(1.2) contrast(1.4) saturate(1.6)')">Vivid</div>
+
+    </div>
+  </div>
+
+  <div class="flash" id="flash"></div>
+
+  <div id="strip">
+    <img id="img1">
+    <img id="img2">
+    <img id="img3">
+    <img id="img4">
+    <div class="caption">Shot n Go!</div>
+  </div>
+  <button id="downloadBtn" onclick="downloadStrip()">Download Strip</button>
+
+  <!-- Audio and Script remain unchanged -->
+  <audio id="beep" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+  <audio id="snap" src="https://www.soundjay.com/button/camera-shutter-click-03.wav"></audio>
+
+  <script>
+    const video = document.getElementById('camera');
+    const flash = document.getElementById('flash');
+    const countdownEl = document.getElementById('countdown');
+    const filterPopup = document.getElementById('filterPopup');
+    const overlay = document.getElementById('overlay');
+    const strip = document.getElementById('strip');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const beep = document.getElementById('beep');
+    const snap = document.getElementById('snap');
+    const imgs = [
+      document.getElementById('img1'),
+      document.getElementById('img2'),
+      document.getElementById('img3'),
+      document.getElementById('img4')
+    ];
+    let currentFilter = 'none';
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      .then(stream => video.srcObject = stream)
+      .catch(err => alert("Camera access blocked."));
+
+    function openPopup() {
+      filterPopup.classList.add('active');
+      overlay.classList.add('active');
+    }
+
+    function closePopup() {
+      filterPopup.classList.remove('active');
+      overlay.classList.remove('active');
+    }
+
+    function setFilter(f) {
+      currentFilter = f;
+      video.style.filter = f;
+      closePopup();
+    }
+
+    function showFlash() {
+      flash.style.display = 'block';
+      snap.play();
+      setTimeout(() => flash.style.display = 'none', 200);
+    }
+
+    async function startCapture() {
+      let count = 0;
+      const canvas = document.createElement('canvas');
+      canvas.width = 320;
+      canvas.height = 240;
+      const ctx = canvas.getContext('2d');
+
+      const takePhoto = () => {
+        showFlash();
+        ctx.filter = currentFilter;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        imgs[count].src = canvas.toDataURL();
+        imgs[count].style.filter = currentFilter;
+        count++;
+      };
+
+      for (let i = 0; i < 4; i++) {
+        await countdown(3);
+        takePhoto();
+      }
+
+      strip.style.display = 'flex';
+      downloadBtn.style.display = 'inline-block';
+    }
+
+    function countdown(seconds) {
+      return new Promise(resolve => {
+        countdownEl.style.display = 'block';
+        let timeLeft = seconds;
+        countdownEl.textContent = timeLeft;
+        const interval = setInterval(() => {
+          timeLeft--;
+          beep.play();
+          countdownEl.textContent = timeLeft;
+          if (timeLeft === 0) {
+            clearInterval(interval);
+            countdownEl.style.display = 'none';
+            resolve();
+          }
+        }, 1000);
+      });
+    }
+
+    function downloadStrip() {
+      const canvas = document.createElement('canvas');
+      const width = 320;
+      const height = 240 * 4 + 80;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, width, height);
+
+      imgs.forEach((img, i) => {
+        const image = new Image();
+        image.src = img.src;
+        ctx.filter = currentFilter;
+        ctx.drawImage(image, 10, 10 + i * 240, 300, 220);
+      });
+
+      ctx.filter = 'none';
+      ctx.fillStyle = "#333";
+      ctx.font = "bold 16px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("Shot n Go!", width / 2, height - 20);
+
+      const link = document.createElement('a');
+      link.download = 'shot-n-go-strip.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+  </script>
+</body>
+</html>
